@@ -116,6 +116,26 @@ Tip: You can also run the built-in dry-run mode of the bulk reset script to vali
 pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -DryRun
 ```
 
+### Automated preflight script
+Prefer a one-command, read-only preflight? Use the script below. It reports PASS/WARN/FAIL and exits non-zero on FAIL.
+
+Basic run:
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1
+```
+With admin and CSV checks, plus JSON export:
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1 -AdminUpn "admin-helper@tenant.onmicrosoft.com" -CsvPath "./passwords.csv" -OutJson "./preflight.json"
+```
+Attempt to install missing modules for CurrentUser:
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1 -InstallModules
+```
+Require write scopes to already be granted (otherwise FAIL):
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1 -RequireWriteScopes
+```
+
 ## Usage (defederate the domain)
 From the project root:
 
