@@ -65,94 +65,17 @@ pwsh ./scripts/ps/Run-Defederation.ps1 -Domain "contoso.com" -AdminUpn "admin-he
 ```
 
 ## Preflight checks (read-only)
-Prefer to run checks standalone first? See the automated preflight script, or the manual steps below.
+Use the automated preflight script to validate readiness. It performs only read operations and reports PASS/WARN/FAIL, exiting non-zero on FAIL. You’ll get a concise table in the terminal and can optionally export JSON for auditing.
 
-### Automated preflight script
-Prefer a one-command, read-only preflight? Use the script below. It reports PASS/WARN/FAIL and exits non-zero on FAIL.
-
-Basic run:
-```bash
-pwsh ./scripts/ps/Preflight-Defederation.ps1
-```
-With admin and CSV checks, plus JSON export:
-```bash
-pwsh ./scripts/ps/Preflight-Defederation.ps1 -AdminUpn "admin-helper@tenant.onmicrosoft.com" -CsvPath "./passwords.csv" -OutJson "./preflight.json"
-```
-Attempt to install missing modules for CurrentUser:
-```bash
-pwsh ./scripts/ps/Preflight-Defederation.ps1 -InstallModules
-```
-Require write scopes to already be granted (otherwise FAIL):
-```bash
-pwsh ./scripts/ps/Preflight-Defederation.ps1 -RequireWriteScopes
-```
-
-Use this checklist to validate your environment and tenant state before defederation and bulk password resets. These steps are read-only and safe to run.
-
-What this validates
-- Local environment: PowerShell version available
-- Graph connection with read scopes
-- Tenant snapshot (name/id)
-- All domains are Managed and verified
-- Optional: Admin account existence and role
+What it validates
+- Modules availability (no changes unless -InstallModules)
+- Graph read scopes
+- Tenant snapshot (name/id and onmicrosoft.com domain)
+- All domains are Managed; verified status
+- Optional: Admin account exists and is Global Administrator
 - Optional: CSV user list validity
-
-1) Confirm PowerShell and connect to Graph (read scopes)
-```powershell path=null start=null
-pwsh --version
-# Connect with minimal read scopes for preflight
-Connect-MgGraph -Scopes 'Directory.Read.All','Domain.Read.All','User.Read.All'
-```
-
-2) Tenant snapshot
-```powershell path=null start=null
-Get-MgOrganization | Select-Object Id, DisplayName, VerifiedDomains
-```
-
-3) Domain state (must be Managed)
-```powershell path=null start=null
-Get-MgDomain | Select-Object Id, AuthenticationType, IsVerified | Format-Table -AutoSize
-# If any AuthenticationType is not 'Managed', address that before proceeding
-```
-
-4) Optional: Verify admin account and role
-```powershell path=null start=null
-$adminUpn = 'admin-helper@tenant.onmicrosoft.com'
-$admin    = Get-MgUser -UserId $adminUpn
-$gaRole   = Get-MgDirectoryRole -Filter "displayName eq 'Global Administrator'"
-if ($gaRole) {
-  $members = Get-MgDirectoryRoleMember -DirectoryRoleId $gaRole.Id -All
-  $isGA    = $members | Where-Object { $_.Id -eq $admin.Id }
-  if ($isGA) { Write-Host "[PASS] $adminUpn is Global Administrator" } else { Write-Host "[FAIL] $adminUpn is not Global Administrator" }
-} else {
-  Write-Host "[WARN] Global Administrator directory role not activated in this tenant"
-}
-```
-
-5) Optional: Validate your CSV before bulk password reset
-```powershell path=null start=null
-$csvPath = './passwords.csv'
-$rows    = Import-Csv -LiteralPath $csvPath
-# Check headers
-$required = 'UserPrincipalName','Password'
-$missingHeaders = $required | Where-Object { $_ -notin $rows[0].PSObject.Properties.Name }
-if ($missingHeaders) { Write-Host "[FAIL] Missing headers: $($missingHeaders -join ', ')" }
-# Check each user exists
-$notFound = 0
-foreach ($r in $rows) {
-  if ([string]::IsNullOrWhiteSpace($r.UserPrincipalName) -or [string]::IsNullOrWhiteSpace($r.Password)) { continue }
-  try { $null = Get-MgUser -UserId $r.UserPrincipalName } catch { $notFound++ }
-}
-Write-Host ("Users not found: {0}" -f $notFound)
-```
-
-Tip: You can also run the built-in dry-run mode of the bulk reset script to validate users with a summary:
-```bash path=null start=null
-pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -DryRun
-```
-
-### Automated preflight script
-Prefer a one-command, read-only preflight? Use the script below. It reports PASS/WARN/FAIL and exits non-zero on FAIL.
+- Optional: Licensing snapshot
+- Optional: Write-scope readiness (fail with -RequireWriteScopes)
 
 Basic run:
 ```bash
