@@ -1,12 +1,12 @@
 # Defederate M365 From GoDaddy
 
-Defederate a Microsoft 365 custom domain (e.g., one previously federated via GoDaddy) by converting it from Federated to Managed authentication using Microsoft Graph.
+Defederate a Microsoft 365 tenant (e.g., one previously federated via GoDaddy) by converting federated domains to Managed authentication using Microsoft Graph.
 
 ## Features
 - Checks/installs Microsoft.Graph.Identity.DirectoryManagement (CurrentUser scope) if missing
 - Connects to Microsoft Graph with the required scopes
 - Shows current domain authenticationType
-- Converts domain to Managed (defederates)
+- Converts a specified domain to Managed (as part of tenant defederation)
 - Verifies the result and performs a delayed final verification
 
 ## Prerequisites
@@ -17,7 +17,7 @@ Defederate a Microsoft 365 custom domain (e.g., one previously federated via GoD
 ## High-level defederation steps (overview)
 - Prepare your end users with the planned date/time and password reset expectations.
 - Become a tenant admin (create or regain access to a Global Administrator on the tenant’s onmicrosoft.com domain).
-- Remove federation with GoDaddy (convert the custom domain(s) to Managed).
+- Defederate the tenant by converting all federated custom domains to Managed.
 - Reset users’ passwords (bulk via CSV supported below), and distribute new credentials.
 - Add a CSP provider or move Direct to Microsoft and provision licensing as needed.
 - Remove GoDaddy as Delegated Admin.
@@ -31,7 +31,7 @@ Important: All custom domains in the tenant must be in a Managed state for defed
 
 ## Tenant admin: create a Global Administrator for defederation
 
-Before running the script, have the tenant admin create a cloud-only Global Administrator account you can use to authenticate and defederate. Using a cloud-only account on the tenant’s onmicrosoft.com domain avoids sign-in issues while the custom domain is being converted.
+Before running the script, have the tenant admin create a cloud-only Global Administrator account you can use to authenticate and defederate. Using a cloud-only account on the tenant’s onmicrosoft.com domain avoids sign-in issues while the tenant is being defederated.
 
 1) Sign in to the Azure portal: https://portal.azure.com using a tenant admin account for the GoDaddy Microsoft 365 tenant.
 2) Open "Microsoft Entra ID" (formerly Azure Active Directory).
@@ -52,7 +52,7 @@ Before running the script, have the tenant admin create a cloud-only Global Admi
 9) Use this account when prompted by the script to sign in to Microsoft Graph.
 
 ## Orchestrated run (one command)
-Use the orchestrator to run preflight (read-only), defederate the domain, and optionally bulk reset passwords. Artifacts are saved under ./logs.
+Use the orchestrator to run preflight (read-only), defederate the tenant (by converting the specified federated domain to Managed; repeat for additional domains if present), and optionally bulk reset passwords. Artifacts are saved under ./logs.
 
 Examples:
 - Full run with preflight, install missing modules, defederate, and reset passwords:
