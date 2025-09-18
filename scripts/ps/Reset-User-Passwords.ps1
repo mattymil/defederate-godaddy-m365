@@ -30,7 +30,11 @@ param(
     [string]$CsvPath,
 
     [Parameter()]
-    [bool]$ForceChangePasswordNextSignIn = $true
+    [bool]$ForceChangePasswordNextSignIn = $true,
+
+    [Parameter(HelpMessage = "Validate inputs and users but do not change passwords")] [switch]$DryRun,
+
+    [Parameter(HelpMessage = "Optional path to write results as CSV")] [string]$OutCsv
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,7 +44,11 @@ function Write-WarnMsg { param([string]$Message) Write-Warning $Message }
 function Write-ErrMsg { param([string]$Message) Write-Error $Message }
 
 # Ensure required modules are present
-$requiredModules = @('Microsoft.Graph.Users','Microsoft.Graph.Users.Actions')
+$requiredModules = @(
+    'Microsoft.Graph.Users',
+    'Microsoft.Graph.Users.Actions',
+    'Microsoft.Graph.Identity.DirectoryManagement'
+)
 foreach ($m in $requiredModules) {
     if (-not (Get-Module -ListAvailable -Name $m | Select-Object -First 1)) {
         Write-Info "Installing module $m for current user..."
@@ -68,6 +76,21 @@ catch {
     exit 1
 }
 
+# Safety check: ensure all tenant domains are Managed before proceeding
+try {
+    $domains = Get-MgDomain -ErrorAction Stop
+    $nonManaged = $domains | Where-Object { $_.AuthenticationType -ne 'Managed' }
+    if ($nonManaged -and $nonManaged.Count -gt 0) {
+        $list = ($nonManaged | Select-Object -ExpandProperty Id) -join ', '
+        Write-ErrMsg "All tenant domains must be Managed before resetting passwords. Non-managed domains: $list"
+        exit 1
+    }
+}
+catch {
+    Write-ErrMsg ("Failed to query tenant domains: {0}" -f $_.Exception.Message)
+    exit 1
+}
+
 # Validate CSV
 if (-not (Test-Path -LiteralPath $CsvPath)) {
     Write-ErrMsg "CSV file not found: $CsvPath"
@@ -92,6 +115,21 @@ foreach ($row in $rows) {
         $fail++
         continue
     }
+
+    if ($DryRun) {
+        try {
+            # Validate that the user exists
+            $null = Get-MgUser -UserId $upn -ErrorAction Stop
+            $results += [pscustomobject]@{ UserPrincipalName=$upn; Status='DryRun-Ok'; Message='User exists; password would be updated' }
+            $success++
+        }
+        catch {
+            $results += [pscustomobject]@{ UserPrincipalName=$upn; Status='DryRun-Failed'; Message=("User lookup failed: {0}" -f $_.Exception.Message) }
+            $fail++
+        }
+        continue
+    }
+
     try {
         # Update-MgUserPassword is part of Microsoft.Graph.Users.Actions in earlier examples,
         # currently Set-MgUserPassword or Update-MgUser -PasswordProfile is supported.
@@ -108,4 +146,16 @@ foreach ($row in $rows) {
 
 # Summary
 Write-Host "Completed password reset: $success succeeded, $fail failed"
+
+# Optional export
+if ($OutCsv) {
+    try {
+        $results | Export-Csv -Path $OutCsv -NoTypeInformation -Encoding UTF8
+        Write-Info ("Results written to {0}" -f (Resolve-Path -LiteralPath $OutCsv))
+    }
+    catch {
+        Write-WarnMsg ("Failed to export results CSV: {0}" -f $_.Exception.Message)
+    }
+}
+
 $results | Sort-Object Status, UserPrincipalName | Format-Table -AutoSize

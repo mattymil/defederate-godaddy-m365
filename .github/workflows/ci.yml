@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-powershell:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        uses: PowerShell/PowerShell@v1
+        with:
+          version: '7.4.x'
+
+      - name: Install PSScriptAnalyzer
+        run: pwsh -NoLogo -NoProfile -Command "Install-Module PSScriptAnalyzer -Scope CurrentUser -Force"
+
+      - name: Run PSScriptAnalyzer
+        run: pwsh -NoLogo -NoProfile -Command "Invoke-ScriptAnalyzer -Path scripts/ps -Recurse -Severity Warning,Error"
+
+      - name: Check formatting (PSWhiteSpace)
+        run: pwsh -NoLogo -NoProfile -Command "Invoke-ScriptAnalyzer -Path scripts/ps -Recurse -IncludeRule PSUseConsistentWhitespace -Severity Warning,Error"

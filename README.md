@@ -87,13 +87,26 @@ user2@contoso.com,AnotherP@ss1!
 pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv"
 ```
 
+- Dry run (validate CSV and user existence, no changes):
+
+```bash
+pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -DryRun
+```
+
 - By default, users will be required to change the password at next sign-in. To disable that behavior:
 
 ```bash
 pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -ForceChangePasswordNextSignIn:$false
 ```
 
+- Export results to CSV:
+
+```bash
+pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -OutCsv "./reset-results.csv"
+```
+
 Notes:
+- The script checks that all tenant domains are Managed before proceeding.
 - Ensure your password values meet the tenant’s password policy.
 - If Conditional Access or MFA is enforced, first sign-in may require additional steps.
 
