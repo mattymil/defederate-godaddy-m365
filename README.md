@@ -14,6 +14,21 @@ Defederate a Microsoft 365 custom domain (e.g., one previously federated via GoD
 - Permissions to grant Graph scopes: Directory.Read.All, Domain.Read.All, Domain.ReadWrite.All, Directory.AccessAsUser.All
 - An admin account (e.g., Global Admin) to sign in during the script run
 
+## High-level defederation steps (overview)
+- Prepare your end users with the planned date/time and password reset expectations.
+- Become a tenant admin (create or regain access to a Global Administrator on the tenant’s onmicrosoft.com domain).
+- Remove federation with GoDaddy (convert the custom domain(s) to Managed).
+- Reset users’ passwords (bulk via CSV supported below), and distribute new credentials.
+- Add a CSP provider or move Direct to Microsoft and provision licensing as needed.
+- Remove GoDaddy as Delegated Admin.
+- Cancel the GoDaddy subscription after access has been removed.
+
+Important: All custom domains in the tenant must be in a Managed state for defederation to fully take effect.
+
+## Prepare end users
+- Notify users of the exact window when defederation and password resets will occur (preferably off-hours).
+- Share simple re-sign-in steps for Office apps: e.g., Office apps File > Account > Sign out > Sign in; Outlook will prompt for the new password.
+
 ## Tenant admin: create a Global Administrator for defederation
 
 Before running the script, have the tenant admin create a cloud-only Global Administrator account you can use to authenticate and defederate. Using a cloud-only account on the tenant’s onmicrosoft.com domain avoids sign-in issues while the custom domain is being converted.
@@ -36,7 +51,7 @@ Before running the script, have the tenant admin create a cloud-only Global Admi
    - Ensure the account can open Microsoft Entra ID and manage directory settings.
 9) Use this account when prompted by the script to sign in to Microsoft Graph.
 
-## Usage
+## Usage (defederate the domain)
 From the project root:
 
 ```bash
@@ -54,6 +69,44 @@ If you prefer not to auto-install the required module:
 ```bash
 pwsh ./scripts/ps/Defederate-Domain.ps1 -Domain "contoso.com" -SkipModuleInstall
 ```
+
+## Bulk reset user passwords (CSV)
+After defederation, reset passwords in bulk and distribute credentials.
+
+1) Prepare a CSV file with the columns UserPrincipalName and Password. Example:
+
+```csv
+UserPrincipalName,Password
+user1@contoso.com,TempP@ssw0rd!
+user2@contoso.com,AnotherP@ss1!
+```
+
+2) Run the bulk reset script:
+
+```bash
+pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv"
+```
+
+- By default, users will be required to change the password at next sign-in. To disable that behavior:
+
+```bash
+pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -ForceChangePasswordNextSignIn:$false
+```
+
+Notes:
+- Ensure your password values meet the tenant’s password policy.
+- If Conditional Access or MFA is enforced, first sign-in may require additional steps.
+
+## CSP vs. Direct licensing (post-defederation)
+- CSP: Accept the partner relationship, provision the required licenses, and (if changing SKUs) bulk-assign the new licenses and remove old ones.
+- Direct to Microsoft: Purchase licenses in the Microsoft 365 admin center and assign as needed.
+
+## Remove GoDaddy delegated admin and cancel subscription (warning)
+- Remove GoDaddy as a delegated admin before canceling their subscription to avoid unintended automated actions (like user deletions or domain removal).
+- After removing access, cancel the GoDaddy subscription from their portal.
+
+## Optional: SharePoint URL rename
+- You can update SharePoint site addresses post-defederation to reflect the tenant domain (see Microsoft docs for changing site addresses).
 
 ## Notes
 - The script will prompt you to sign in to Microsoft Graph and request the necessary scopes.
