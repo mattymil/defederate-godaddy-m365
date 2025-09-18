@@ -1,4 +1,4 @@
-# defederate-godaddy-m365
+# Defederate M365 From GoDaddy
 
 Defederate a Microsoft 365 custom domain (e.g., one previously federated via GoDaddy) by converting it from Federated to Managed authentication using Microsoft Graph.
 
