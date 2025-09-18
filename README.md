@@ -94,7 +94,7 @@ Require write scopes to already be granted (otherwise FAIL):
 pwsh ./scripts/ps/Preflight-Defederation.ps1 -RequireWriteScopes
 ```
 
-## Usage (defederate the domain)
+## Defederate the Tenant
 From the project root:
 
 ```bash
