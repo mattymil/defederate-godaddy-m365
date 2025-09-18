@@ -18,12 +18,7 @@ jobs:
         run: |
           Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
 
-      - name: Run PSScriptAnalyzer
+      - name: Run PSScriptAnalyzer with settings
         shell: pwsh
         run: |
-          Invoke-ScriptAnalyzer -Path scripts/ps -Recurse -Severity Warning,Error
-
-      - name: Check formatting (PSWhiteSpace)
-        shell: pwsh
-        run: |
-          Invoke-ScriptAnalyzer -Path scripts/ps -Recurse -IncludeRule PSUseConsistentWhitespace -Severity Warning,Error
+          Invoke-ScriptAnalyzer -Path scripts/ps -Recurse -Settings ./.config/PSScriptAnalyzerSettings.psd1
