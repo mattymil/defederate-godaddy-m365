@@ -51,6 +51,71 @@ Before running the script, have the tenant admin create a cloud-only Global Admi
    - Ensure the account can open Microsoft Entra ID and manage directory settings.
 9) Use this account when prompted by the script to sign in to Microsoft Graph.
 
+## Preflight checks (read-only)
+Use this checklist to validate your environment and tenant state before defederation and bulk password resets. These steps are read-only and safe to run.
+
+What this validates
+- Local environment: PowerShell version available
+- Graph connection with read scopes
+- Tenant snapshot (name/id)
+- All domains are Managed and verified
+- Optional: Admin account existence and role
+- Optional: CSV user list validity
+
+1) Confirm PowerShell and connect to Graph (read scopes)
+```powershell path=null start=null
+pwsh --version
+# Connect with minimal read scopes for preflight
+Connect-MgGraph -Scopes 'Directory.Read.All','Domain.Read.All','User.Read.All'
+```
+
+2) Tenant snapshot
+```powershell path=null start=null
+Get-MgOrganization | Select-Object Id, DisplayName, VerifiedDomains
+```
+
+3) Domain state (must be Managed)
+```powershell path=null start=null
+Get-MgDomain | Select-Object Id, AuthenticationType, IsVerified | Format-Table -AutoSize
+# If any AuthenticationType is not 'Managed', address that before proceeding
+```
+
+4) Optional: Verify admin account and role
+```powershell path=null start=null
+$adminUpn = 'admin-helper@tenant.onmicrosoft.com'
+$admin    = Get-MgUser -UserId $adminUpn
+$gaRole   = Get-MgDirectoryRole -Filter "displayName eq 'Global Administrator'"
+if ($gaRole) {
+  $members = Get-MgDirectoryRoleMember -DirectoryRoleId $gaRole.Id -All
+  $isGA    = $members | Where-Object { $_.Id -eq $admin.Id }
+  if ($isGA) { Write-Host "[PASS] $adminUpn is Global Administrator" } else { Write-Host "[FAIL] $adminUpn is not Global Administrator" }
+} else {
+  Write-Host "[WARN] Global Administrator directory role not activated in this tenant"
+}
+```
+
+5) Optional: Validate your CSV before bulk password reset
+```powershell path=null start=null
+$csvPath = './passwords.csv'
+$rows    = Import-Csv -LiteralPath $csvPath
+# Check headers
+$required = 'UserPrincipalName','Password'
+$missingHeaders = $required | Where-Object { $_ -notin $rows[0].PSObject.Properties.Name }
+if ($missingHeaders) { Write-Host "[FAIL] Missing headers: $($missingHeaders -join ', ')" }
+# Check each user exists
+$notFound = 0
+foreach ($r in $rows) {
+  if ([string]::IsNullOrWhiteSpace($r.UserPrincipalName) -or [string]::IsNullOrWhiteSpace($r.Password)) { continue }
+  try { $null = Get-MgUser -UserId $r.UserPrincipalName } catch { $notFound++ }
+}
+Write-Host ("Users not found: {0}" -f $notFound)
+```
+
+Tip: You can also run the built-in dry-run mode of the bulk reset script to validate users with a summary:
+```bash path=null start=null
+pwsh ./scripts/ps/Reset-User-Passwords.ps1 -CsvPath "./passwords.csv" -DryRun
+```
+
 ## Usage (defederate the domain)
 From the project root:
 
