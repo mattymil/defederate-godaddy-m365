@@ -14,6 +14,28 @@ Defederate a Microsoft 365 custom domain (e.g., one previously federated via GoD
 - Permissions to grant Graph scopes: Directory.Read.All, Domain.Read.All, Domain.ReadWrite.All, Directory.AccessAsUser.All
 - An admin account (e.g., Global Admin) to sign in during the script run
 
+## Tenant admin: create a Global Administrator for defederation
+
+Before running the script, have the tenant admin create a cloud-only Global Administrator account you can use to authenticate and defederate. Using a cloud-only account on the tenant’s onmicrosoft.com domain avoids sign-in issues while the custom domain is being converted.
+
+1) Sign in to the Azure portal: https://portal.azure.com using a tenant admin account for the GoDaddy Microsoft 365 tenant.
+2) Open "Microsoft Entra ID" (formerly Azure Active Directory).
+3) Go to Users > New user > Create new user.
+4) Create the user:
+   - User principal name (UPN): choose the tenant’s onmicrosoft.com domain (e.g., admin-helper@tenant.onmicrosoft.com).
+   - Name: something descriptive (e.g., Defederation Admin).
+   - Let the portal generate an initial password; copy it for first sign-in.
+5) Assign the Global Administrator role:
+   - In the user creation flow, expand Roles and click Assign roles (or after creation, open the user > Assigned roles > Add assignments).
+   - Search for and assign Global Administrator.
+6) Complete user creation.
+7) First-time sign-in and password change:
+   - Open a private browser window and sign in at https://portal.azure.com with the new account.
+   - Change the temporary password when prompted. If Conditional Access/MFA is enforced, complete the setup.
+8) Verify access:
+   - Ensure the account can open Microsoft Entra ID and manage directory settings.
+9) Use this account when prompted by the script to sign in to Microsoft Graph.
+
 ## Usage
 From the project root:
 
