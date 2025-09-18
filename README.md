@@ -51,7 +51,42 @@ Before running the script, have the tenant admin create a cloud-only Global Admi
    - Ensure the account can open Microsoft Entra ID and manage directory settings.
 9) Use this account when prompted by the script to sign in to Microsoft Graph.
 
+## Orchestrated run (one command)
+Use the orchestrator to run preflight (read-only), defederate the domain, and optionally bulk reset passwords. Artifacts are saved under ./logs.
+
+Examples:
+- Full run with preflight, install missing modules, defederate, and reset passwords:
+```bash
+pwsh ./scripts/ps/Run-Defederation.ps1 -Domain "contoso.com" -AdminUpn "admin-helper@tenant.onmicrosoft.com" -CsvPath "./passwords.csv" -InstallModules -Force
+```
+- Run preflight + defederate only (no password reset):
+```bash
+pwsh ./scripts/ps/Run-Defederation.ps1 -Domain "contoso.com" -AdminUpn "admin-helper@tenant.onmicrosoft.com" -InstallModules -Force
+```
+
 ## Preflight checks (read-only)
+Prefer to run checks standalone first? See the automated preflight script, or the manual steps below.
+
+### Automated preflight script
+Prefer a one-command, read-only preflight? Use the script below. It reports PASS/WARN/FAIL and exits non-zero on FAIL.
+
+Basic run:
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1
+```
+With admin and CSV checks, plus JSON export:
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1 -AdminUpn "admin-helper@tenant.onmicrosoft.com" -CsvPath "./passwords.csv" -OutJson "./preflight.json"
+```
+Attempt to install missing modules for CurrentUser:
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1 -InstallModules
+```
+Require write scopes to already be granted (otherwise FAIL):
+```bash
+pwsh ./scripts/ps/Preflight-Defederation.ps1 -RequireWriteScopes
+```
+
 Use this checklist to validate your environment and tenant state before defederation and bulk password resets. These steps are read-only and safe to run.
 
 What this validates
