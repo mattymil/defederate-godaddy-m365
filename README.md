@@ -33,7 +33,7 @@ Important: All custom domains in the tenant must be in a Managed state for defed
 
 Before running the script, have the tenant admin create a cloud-only Global Administrator account you can use to authenticate and defederate. Using a cloud-only account on the tenant’s onmicrosoft.com domain avoids sign-in issues while the tenant is being defederated.
 
-1) Sign in to the Azure portal: https://portal.azure.com using a tenant admin account for the GoDaddy Microsoft 365 tenant.
+1) Sign in to the Azure portal: https://portal.azure.com using a tenant admin account for the GoDaddy Microsoft 365 tenant. This is normally the GoDaddy user that owns the GoDaddy account but you can use any global admin account.
 2) Open "Microsoft Entra ID" (formerly Azure Active Directory).
 3) Go to Users > New user > Create new user.
 4) Create the user:
